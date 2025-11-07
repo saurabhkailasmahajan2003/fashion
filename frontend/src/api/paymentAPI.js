@@ -20,23 +20,15 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export const createRazorpayOrder = async (orderData) => {
-  try {
-    console.log('API Call: POST /api/orders/create-razorpay-order', orderData);
-    const response = await api.post('/orders/create-razorpay-order', orderData);
-    console.log('API Response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('API Error Details:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      url: error.config?.url,
-      method: error.config?.method
-    });
-    throw error;
-  }
+// CGPEY
+export const createCgpeyPayment = async (payload) => {
+  const { data } = await api.post('/orders/cgpey/make-payment', payload);
+  return data;
+};
+
+export const checkCgpeyStatus = async (transactionId) => {
+  const { data } = await api.post('/orders/cgpey/check-status', { transaction_id: transactionId });
+  return data;
 };
 
 export const verifyRazorpayPayment = async (paymentData) => {

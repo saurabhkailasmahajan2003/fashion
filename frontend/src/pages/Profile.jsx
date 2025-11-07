@@ -117,6 +117,7 @@ export default function Profile() {
                     <div className="flex items-center gap-4">
                       <div className="text-sm font-semibold text-gray-900">₹{(o.totalPrice || o.total || 0).toLocaleString()}</div>
                       <div className={`text-xs px-2 py-1 rounded-full ${o.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{o.isPaid ? 'Paid' : 'Pending'}</div>
+                      <div className={`text-xs px-2 py-1 rounded-full ${o.isDelivered ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-700'}`}>{o.isDelivered ? 'Delivered' : 'Not delivered'}</div>
                       {expandedOrder === o._id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>
                   </button>
@@ -134,9 +135,17 @@ export default function Profile() {
                           </div>
                         ))}
                       </div>
-                      <div className="mt-3 flex items-center justify-between">
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
                         <div className="text-sm text-gray-500">Shipping: ₹{(o.shippingPrice || 0).toLocaleString()}</div>
-                        <div className="text-sm text-gray-900 font-semibold">Total: ₹{(o.totalPrice || o.total || 0).toLocaleString()}</div>
+                        <div className="text-sm">
+                          <span className="text-gray-500 mr-2">Payment:</span>
+                          <span className={`${o.isPaid ? 'text-green-700' : 'text-yellow-700'}`}>{o.isPaid ? 'Paid' : 'Pending'}</span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-gray-500 mr-2">Delivery:</span>
+                          <span className={`${o.isDelivered ? 'text-blue-700' : 'text-gray-700'}`}>{o.isDelivered ? 'Delivered' : 'Not delivered'}</span>
+                        </div>
+                        <div className="sm:col-span-3 text-right text-sm text-gray-900 font-semibold">Total: ₹{(o.totalPrice || o.total || 0).toLocaleString()}</div>
                       </div>
                     </div>
                   )}

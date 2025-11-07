@@ -47,7 +47,9 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        // Body text
+        sans: ['Poppins', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        // Headings
         display: ['Playfair Display', 'serif']
       },
       container: {

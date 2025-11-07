@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
 import { useUser } from '../context/UserContext.jsx';
-import { createRazorpayOrder } from '../api/paymentAPI.js';
+import { createCgpeyPayment, checkCgpeyStatus } from '../api/paymentAPI.js';
 import { motion } from 'framer-motion';
 import { Loader, CreditCard, MapPin } from 'lucide-react';
 
@@ -61,14 +61,12 @@ export default function Checkout() {
       console.log('Creating order with items:', orderItems);
       console.log('Total amount:', totals.totalPrice);
 
-      // Create order in database
-      const orderPayload = {
-        amount: Math.round(totals.totalPrice * 100), // Convert to paise
-        currency: 'INR',
+      // Create CGPEY payment intent
+      const payload = {
         orderItems,
         shippingAddress: {
           name: form.name,
-          email: form.email, // Add email for Razorpay customer
+          email: form.email,
           address: form.address,
           city: form.city,
           state: form.state,
@@ -77,69 +75,45 @@ export default function Checkout() {
           phone: form.phone
         }
       };
-      
-      console.log('Sending order payload:', orderPayload);
-      const orderData = await createRazorpayOrder(orderPayload);
-      console.log('Backend response:', JSON.stringify(orderData, null, 2));
 
-      console.log('Order created:', orderData);
+      console.log('Sending CGPEY payload:', payload);
+      const resp = await createCgpeyPayment(payload);
+      console.log('CGPEY response:', resp);
 
-      if (!orderData || !orderData.orderId) {
-        throw new Error('Failed to create order. Please try again.');
+      if (!resp || !resp.orderId) {
+        throw new Error('Failed to create payment intent.');
       }
 
-      // Build Razorpay payment link
-      const orderId = orderData.orderId;
-      
-      console.log('Checking payment link URL:', {
-        hasPaymentLinkUrl: !!orderData.paymentLinkUrl,
-        hasError: !!orderData.error,
-        usePersonalizedLink: orderData.usePersonalizedLink,
-        message: orderData.message
-      });
-      
-      // If backend returns paymentLinkUrl (from Razorpay Payment Links API), use it
-      // This will have the amount pre-filled and QR code available
-      if (orderData.paymentLinkUrl) {
-        // Store order info for verification after payment
-        sessionStorage.setItem('pendingOrderId', orderId);
-        sessionStorage.setItem('pendingOrderData', JSON.stringify({
-          orderId,
-          paymentLinkId: orderData.paymentLinkId,
-          items,
-          shippingAddress: {
-            name: form.name,
-            address: form.address,
-            city: form.city,
-            state: form.state,
-            postalCode: form.postalCode,
-            country: form.country,
-            phone: form.phone
+      const orderId = resp.orderId;
+      sessionStorage.setItem('pendingOrderId', orderId);
+      sessionStorage.setItem('pendingOrderData', JSON.stringify({ orderId, items }));
+
+      // Open intent if provided
+      const intentUrl = resp?.cgpey?.intentData;
+      if (intentUrl && typeof window !== 'undefined') {
+        window.location.href = intentUrl;
+      }
+
+      // Simple polling for status (in case user returns to app)
+      let attempts = 0;
+      const maxAttempts = 60; // ~3 minutes at 3s interval
+      const interval = setInterval(async () => {
+        attempts += 1;
+        try {
+          const status = await checkCgpeyStatus(orderId);
+          if (String(status.status).toLowerCase() === 'success') {
+            clearInterval(interval);
+            clearCart();
+            navigate(`/order-success?orderId=${orderId}`);
           }
-        }));
-        
-        console.log('Redirecting to Razorpay Payment Link with QR code:', orderData.paymentLinkUrl);
-        
-        // Redirect to Razorpay payment link page
-        // The page will show:
-        // - Amount already filled: ₹{amount}
-        // - QR code to scan
-        // - Customer details pre-filled
-        window.location.href = orderData.paymentLinkUrl;
-        return; // Exit early
-      }
-      
-      // Fallback: If payment link creation failed, show detailed error
-      if (orderData.error || orderData.usePersonalizedLink) {
-        const errorMsg = orderData.message || 
-          'Could not create payment link. Please configure Razorpay API keys in backend/.env file.';
-        console.error('Payment link creation failed:', orderData);
-        throw new Error(errorMsg);
-      }
-      
-      // If no payment link URL, something went wrong
-      console.error('Unexpected response from backend:', orderData);
-      throw new Error('Payment link not generated. Please check backend configuration and try again.');
+        } catch (e) {
+          // ignore and keep polling
+        }
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setProcessing(false);
+        }
+      }, 3000);
     } catch (err) {
       console.error('Payment error:', err);
       console.error('Error response:', err.response);

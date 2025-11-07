@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
 export const connectDB = async () => {
-  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/fashion_store';
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/fashion_store';
   try {
     await mongoose.connect(uri, {
-      dbName: process.env.MONGODB_DB || undefined
+      dbName: process.env.MONGODB_DB || process.env.MONGO_DB || undefined
     });
     // eslint-disable-next-line no-console
     console.log('MongoDB connected');

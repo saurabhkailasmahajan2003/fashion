@@ -4,6 +4,18 @@ import Cart from '../models/Cart.js';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
+// CGPEY endpoints and helpers
+const CGPEY_BASE = 'https://merchant.cgpey.com/api/v2';
+const CGPEY_MAKE_PAYMENT_URL = `${CGPEY_BASE}/makepayment`;
+const CGPEY_CHECK_STATUS_URL = `${CGPEY_BASE}/payment-check-status`;
+
+const buildCgpeyHeaders = () => ({
+  'Content-Type': 'application/json',
+  'x-api-key': process.env.CGPEY_API_KEY || '',
+  'x-secret-key': process.env.CGPEY_SECRET_KEY || '',
+  'ip-address': process.env.CGPEY_WHITELISTED_IP || process.env.CGPEY_IP || '127.0.0.1'
+});
+
 // Initialize Razorpay only if keys are configured
 // This prevents error when server starts without keys
 const getRazorpayInstance = () => {
@@ -22,19 +34,16 @@ const getRazorpayInstance = () => {
 
 // Create Razorpay order and payment link
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount, currency = 'INR', orderItems, shippingAddress } = req.body;
-
-  console.log('createRazorpayOrder called with:', { amount, orderItems, shippingAddress });
+  // Repurposed to CGPEY makepayment to preserve existing route
+  const { orderItems, shippingAddress } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
     return res.status(400).json({ message: 'No order items' });
   }
-
-  if (!shippingAddress || !shippingAddress.name || !shippingAddress.address) {
-    return res.status(400).json({ message: 'Shipping address is required' });
+  if (!shippingAddress || !shippingAddress.name || !shippingAddress.phone) {
+    return res.status(400).json({ message: 'Shipping address with name and phone is required' });
   }
 
-  // Create order in database first
   const orderItemsWithDetails = orderItems.map(item => ({
     product: item.product,
     name: item.name || item.data?.name || 'Product',
@@ -43,19 +52,16 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
     image: item.image || item.data?.images?.[0] || ''
   }));
 
-  // Calculate totals
   const itemsPrice = orderItems.reduce((sum, item) => sum + (item.price || item.data?.price || 0) * item.qty, 0);
   const shippingPrice = itemsPrice > 100 ? 0 : 5;
   const taxPrice = +(itemsPrice * 0.1).toFixed(2);
   const totalPrice = +(itemsPrice + shippingPrice + taxPrice).toFixed(2);
-  const amountInPaise = Math.round(totalPrice * 100); // Convert to paise
 
-  // Create order in database
   const order = await Order.create({
     user: req.user._id,
     orderItems: orderItemsWithDetails,
     shippingAddress,
-    paymentMethod: 'razorpay',
+    paymentMethod: 'cgpey',
     itemsPrice,
     taxPrice,
     shippingPrice,
@@ -63,167 +69,91 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
     isPaid: false
   });
 
-  // Use Razorpay Payment Links API to create dynamic payment link with QR code
+  const headers = buildCgpeyHeaders();
+  if (!headers['x-api-key'] || !headers['x-secret-key']) {
+    return res.status(400).json({
+      orderId: order._id,
+      message: 'CGPEY API keys not configured. Please set CGPEY_API_KEY and CGPEY_SECRET_KEY in backend/.env.'
+    });
+  }
+
+  const payload = {
+    name: shippingAddress.name,
+    mobile_number: String(shippingAddress.phone).replace(/\D/g, '').slice(-10),
+    transaction_id: order._id.toString(),
+    Amount: Math.round(totalPrice)
+  };
+
   try {
-    // Check if Razorpay is configured
-    const hasKeyId = !!process.env.RAZORPAY_KEY_ID;
-    const hasKeySecret = !!process.env.RAZORPAY_KEY_SECRET;
-    
-    console.log('Checking Razorpay configuration:', {
-      hasKeyId,
-      hasKeySecret,
-      keyIdValue: hasKeyId ? process.env.RAZORPAY_KEY_ID.substring(0, 15) + '...' : 'NOT SET',
-      keySecretValue: hasKeySecret ? 'SET (hidden)' : 'NOT SET'
+    const resp = await fetch(CGPEY_MAKE_PAYMENT_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
     });
-    
-    if (!hasKeyId || !hasKeySecret) {
-      console.warn('Razorpay credentials not configured.');
-      console.warn('Please add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to .env file');
-      console.warn('Make sure to REMOVE the # at the start of the lines in .env');
-      return res.status(400).json({
-        orderId: order._id,
-        amount: amountInPaise,
-        currency: 'INR',
-        error: 'Razorpay not configured',
-        usePersonalizedLink: true,
-        message: 'Razorpay API keys not configured. Please:\n1. Open backend/.env file\n2. Uncomment RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET lines (remove #)\n3. Add your actual keys from Razorpay dashboard\n4. Restart the backend server'
-      });
-    }
-    
-    // Check if keys are still placeholder values
-    if (process.env.RAZORPAY_KEY_ID.includes('xxxxxxxxxxxxx') || 
-        process.env.RAZORPAY_KEY_SECRET.includes('xxxxxxxxxxxxx')) {
-      console.warn('Razorpay keys are still placeholder values');
-      return res.status(400).json({
-        orderId: order._id,
-        amount: amountInPaise,
-        currency: 'INR',
-        error: 'Razorpay keys are placeholders',
-        usePersonalizedLink: true,
-        message: 'Please replace the placeholder keys (xxxxxxxxxxxxx) with your actual Razorpay API keys in backend/.env file'
-      });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.status === false) {
+      return res.status(502).json({ orderId: order._id, error: 'CGPEY makepayment failed', details: data });
     }
 
-    console.log('Creating Razorpay payment link...');
-    console.log('Razorpay config check:', {
-      hasKeyId: !!process.env.RAZORPAY_KEY_ID,
-      hasKeySecret: !!process.env.RAZORPAY_KEY_SECRET,
-      keyIdPrefix: process.env.RAZORPAY_KEY_ID?.substring(0, 10)
-    });
-
-    const paymentLinkPayload = {
-      amount: amountInPaise,
-      currency: currency || 'INR',
-      description: `Order #${order._id.toString()}`,
-      customer: {
-        name: shippingAddress.name,
-        email: shippingAddress.email || req.user.email,
-        contact: shippingAddress.phone
-      },
-      notify: {
-        sms: true,
-        email: true
-      },
-      reminder_enable: true,
-      notes: {
-        orderId: order._id.toString(),
-        userId: req.user._id.toString()
-      },
-      callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment-callback`,
-      callback_method: 'get'
+    order.paymentResult = {
+      provider: 'cgpey',
+      txnId: data?.data?.txnId,
+      clientRefId: data?.data?.clientRefId,
+      status: data?.data?.status || data?.data?.paymentState,
+      intentData: data?.data?.intentData || null,
+      qrData: data?.data?.qrData || null
     };
-
-    console.log('Payment link payload:', { ...paymentLinkPayload, customer: { ...paymentLinkPayload.customer } });
-    
-    // Get Razorpay instance
-    const razorpay = getRazorpayInstance();
-    if (!razorpay) {
-      throw new Error('Razorpay instance could not be created');
-    }
-    
-    const paymentLink = await razorpay.paymentLink.create(paymentLinkPayload);
-
-    console.log('Razorpay Payment Link created successfully:', paymentLink.id);
-    console.log('Payment Link URL:', paymentLink.short_url);
+    await order.save();
 
     return res.json({
       orderId: order._id,
-      paymentLinkId: paymentLink.id,
-      paymentLinkUrl: paymentLink.short_url,
-      amount: amountInPaise,
+      amount: Math.round(totalPrice),
       currency: 'INR',
-      // QR code will be available on the payment link page
-      qrCode: true
+      cgpey: data?.data || {},
+      message: data?.message || 'Payment intent created successfully.'
     });
   } catch (error) {
-    console.error('Razorpay Payment Link creation error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      statusCode: error.statusCode,
-      error: error.error
-    });
-    
-    // Return detailed error for debugging
-    return res.status(500).json({
-      orderId: order._id,
-      amount: amountInPaise,
-      currency: 'INR',
-      error: error.message || 'Payment link creation failed',
-      errorDetails: error.error || error,
-      usePersonalizedLink: true,
-      message: `Could not create payment link: ${error.message || 'Unknown error'}. Please check Razorpay credentials.`
-    });
+    return res.status(500).json({ orderId: order._id, error: 'CGPEY makepayment error', details: error?.message || error });
   }
 });
 
 // Verify Razorpay payment
 export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
-  const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+  // Repurposed to check CGPEY status
+  const { orderId } = req.body;
 
-  const order = await Order.findById(orderId);
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found' });
+  const headers = buildCgpeyHeaders();
+  if (!headers['x-api-key'] || !headers['x-secret-key']) {
+    return res.status(400).json({ message: 'CGPEY API keys not configured' });
   }
-
-  // Verify payment signature
-  if (process.env.RAZORPAY_KEY_SECRET) {
-    try {
-      const generatedSignature = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-        .digest('hex');
-
-      if (generatedSignature !== razorpaySignature) {
-        return res.status(400).json({ message: 'Invalid payment signature' });
-      }
-    } catch (error) {
-      console.error('Signature verification error:', error);
-    }
-  }
-
-  // For testing, accept if signature exists
-  const isSignatureValid = razorpaySignature && razorpaySignature.length > 0;
-
-  if (isSignatureValid) {
-    order.isPaid = true;
-    order.paidAt = new Date();
-    order.paymentResult = {
-      id: razorpayPaymentId,
-      status: 'success',
-      update_time: new Date().toISOString(),
-      email_address: req.user.email
-    };
-    await order.save();
-
-    // Clear user's cart after successful payment
-    await Cart.findOneAndDelete({ user: req.user._id });
-
-    res.json({
-      message: 'Payment verified successfully',
-      order: order
+  try {
+    const resp = await fetch(CGPEY_CHECK_STATUS_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ transaction_id: orderId })
     });
-  } else {
-    res.status(400).json({ message: 'Payment verification failed' });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return res.status(502).json({ error: 'CGPEY check-status failed', details: data });
+
+    if (String(data.status).toLowerCase() === 'success' || data.status === true) {
+      const order = await Order.findById(orderId);
+      if (order) {
+        order.isPaid = true;
+        order.paidAt = new Date();
+        order.paymentResult = {
+          provider: 'cgpey',
+          status: 'SUCCESS',
+          utr: data.utr,
+          amount: data.amount
+        };
+        await order.save();
+        await Cart.findOneAndDelete({ user: order.user });
+      }
+      return res.json({ message: 'Payment verified successfully', data });
+    }
+    return res.status(400).json({ message: 'Payment not successful yet', data });
+  } catch (err) {
+    return res.status(500).json({ error: 'CGPEY verify error', details: err?.message || err });
   }
 });
 
@@ -249,5 +179,179 @@ export const updateOrderPayment = asyncHandler(async (req, res) => {
   await Cart.findOneAndDelete({ user: req.user._id });
 
   res.json(order);
+});
+
+// ========================= CGPEY INTEGRATION =========================
+
+// Create CGPEY payment intent (Make Payment)
+export const createCgpeyPayment = asyncHandler(async (req, res) => {
+  const { orderItems, shippingAddress } = req.body;
+
+  if (!orderItems || orderItems.length === 0) return res.status(400).json({ message: 'No order items' });
+  if (!shippingAddress || !shippingAddress.name || !shippingAddress.phone) {
+    return res.status(400).json({ message: 'Shipping address with name and phone is required' });
+  }
+
+  // Calculate totals
+  const itemsPrice = orderItems.reduce((sum, item) => sum + (item.price || item.data?.price || 0) * item.qty, 0);
+  const shippingPrice = itemsPrice > 100 ? 0 : 5;
+  const taxPrice = +(itemsPrice * 0.1).toFixed(2);
+  const totalPrice = +(itemsPrice + shippingPrice + taxPrice).toFixed(2);
+
+  // Create order first
+  const orderItemsWithDetails = orderItems.map(item => ({
+    product: item.product,
+    name: item.name || item.data?.name || 'Product',
+    qty: item.qty,
+    price: item.price || item.data?.price || 0,
+    image: item.image || item.data?.images?.[0] || ''
+  }));
+
+  const order = await Order.create({
+    user: req.user._id,
+    orderItems: orderItemsWithDetails,
+    shippingAddress,
+    paymentMethod: 'cgpey',
+    itemsPrice,
+    taxPrice,
+    shippingPrice,
+    totalPrice,
+    isPaid: false
+  });
+
+  // Build CGPEY request
+  const headers = buildCgpeyHeaders();
+  if (!headers['x-api-key'] || !headers['x-secret-key']) {
+    return res.status(400).json({
+      orderId: order._id,
+      message: 'CGPEY API keys not configured. Please set CGPEY_API_KEY and CGPEY_SECRET_KEY in backend/.env.'
+    });
+  }
+
+  const payload = {
+    name: shippingAddress.name,
+    mobile_number: String(shippingAddress.phone).replace(/\D/g, '').slice(-10),
+    transaction_id: order._id.toString(),
+    Amount: Math.round(totalPrice) // CGPEY expects integer amount
+  };
+
+  try {
+    const resp = await fetch(CGPEY_MAKE_PAYMENT_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.status === false) {
+      return res.status(502).json({
+        orderId: order._id,
+        error: 'CGPEY makepayment failed',
+        details: data
+      });
+    }
+
+    // Attach initial paymentResult for tracking
+    order.paymentResult = {
+      provider: 'cgpey',
+      txnId: data?.data?.txnId,
+      clientRefId: data?.data?.clientRefId,
+      status: data?.data?.status || data?.data?.paymentState,
+      intentData: data?.data?.intentData || null,
+      qrData: data?.data?.qrData || null
+    };
+    await order.save();
+
+    return res.json({
+      orderId: order._id,
+      amount: Math.round(totalPrice),
+      currency: 'INR',
+      cgpey: data?.data || {},
+      message: data?.message || 'Payment intent created successfully.'
+    });
+  } catch (err) {
+    return res.status(500).json({
+      orderId: order._id,
+      error: 'CGPEY makepayment error',
+      details: err?.message || err
+    });
+  }
+});
+
+// Check CGPEY transaction status
+export const checkCgpeyStatus = asyncHandler(async (req, res) => {
+  const { transaction_id } = req.body;
+  if (!transaction_id) return res.status(400).json({ message: 'transaction_id is required' });
+
+  const headers = buildCgpeyHeaders();
+  if (!headers['x-api-key'] || !headers['x-secret-key']) {
+    return res.status(400).json({ message: 'CGPEY API keys not configured' });
+  }
+
+  try {
+    const resp = await fetch(CGPEY_CHECK_STATUS_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ transaction_id })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      return res.status(502).json({ error: 'CGPEY check-status failed', details: data });
+    }
+
+    // If success, try to mark order as paid
+    if (String(data.status).toLowerCase() === 'success' || data.status === true) {
+      try {
+        const order = await Order.findById(transaction_id);
+        if (order) {
+          order.isPaid = true;
+          order.paidAt = new Date();
+          order.paymentResult = {
+            provider: 'cgpey',
+            status: 'SUCCESS',
+            utr: data.utr,
+            amount: data.amount
+          };
+          await order.save();
+          await Cart.findOneAndDelete({ user: order.user });
+        }
+      } catch (_) {}
+    }
+
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ error: 'CGPEY check-status error', details: err?.message || err });
+  }
+});
+
+// CGPEY callback/webhook (public)
+export const handleCgpeyCallback = asyncHandler(async (req, res) => {
+  // Expected body example:
+  // { status: 'SUCCESS', order_id: 'order_id', message: 'Transaction Successfully', utr: '...', amount: '11.00', date: '...' }
+  const { status, order_id, utr, amount } = req.body || {};
+  if (!order_id) return res.status(400).json({ message: 'order_id missing' });
+
+  try {
+    const order = await Order.findById(order_id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (String(status).toUpperCase() === 'SUCCESS') {
+      order.isPaid = true;
+      order.paidAt = new Date();
+      order.paymentResult = {
+        provider: 'cgpey',
+        status: 'SUCCESS',
+        utr,
+        amount
+      };
+      await order.save();
+      await Cart.findOneAndDelete({ user: order.user });
+    }
+
+    // Acknowledge receipt
+    return res.json({ received: true });
+  } catch (err) {
+    return res.status(500).json({ message: 'Callback processing error', error: err?.message || err });
+  }
 });
 

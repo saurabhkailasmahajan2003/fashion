@@ -38,8 +38,8 @@ export default function Home() {
   <FeaturedCollection />
       
   {/* Recommended Products */}
-  <div className="bg-primary-50 py-8 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4">
+  <div className="bg-primary-50 py-8 sm:py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 sm:mb-12">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
@@ -67,14 +67,14 @@ export default function Home() {
   <CategoryShowcase />
 
   {/* New Arrivals */}
-  <section className="bg-primary-50 py-16">
-        <div className="max-w-7xl mx-auto px-4">
+  <section className="bg-primary-50 py-10 sm:py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-3xl font-bold mb-4"
+              className="text-3xl sm:text-4xl font-bold mb-4"
             >
               New Arrivals
             </motion.h2>
@@ -92,7 +92,7 @@ export default function Home() {
           {loading ? (
             <Loader />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               {data.products.map((product, index) => (
                 <motion.div
                   key={product._id}

@@ -39,4 +39,10 @@ export const deleteProduct = async (id) => {
   return data;
 };
 
+export const updateProduct = async (id, product) => {
+  const token = localStorage.getItem('token');
+  const { data } = await api.put(`/api/products/${id}`, product, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+  return data;
+};
+
 

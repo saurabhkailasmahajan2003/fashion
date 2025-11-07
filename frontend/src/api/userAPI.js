@@ -35,3 +35,19 @@ export const getProfile = async () => {
   return data; // {_id, name, email, isAdmin}
 };
 
+// Admin: list all users
+export const getUsers = async () => {
+  const { data } = await api.get('/users');
+  return data; // array of {_id, name, email, isAdmin, createdAt}
+};
+
+export const requestPasswordReset = async (email) => {
+  const { data } = await api.post('/users/forgot-password', { email });
+  return data; // {message}
+};
+
+export const resetPassword = async ({ email, token, password }) => {
+  const { data } = await api.post('/users/reset-password', { email, token, password });
+  return data; // {message}
+};
+

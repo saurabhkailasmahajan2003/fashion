@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../../context/UserContext.jsx';
-import { fetchProducts, createProduct, deleteProduct } from '../../api/productAPI.js';
-import { getAllOrders, markOrderDelivered } from '../../api/ordersAPI.js';
+import { useUser } from '../../context/UserContext';
+import AdminLayout from '../../components/layouts/AdminLayout';
+import { fetchProducts, createProduct, deleteProduct, updateProduct } from '../../api/productAPI';
+import { getAllOrders, markOrderDelivered } from '../../api/ordersAPI';
 
 function ProductForm({ onCancel, onCreated }) {
   const [form, setForm] = useState({ name: '', brand: '', price: '', category: 'Mens', subCategory: '', images: '', description: '', stock: 0 });
@@ -203,7 +204,7 @@ export default function AdminDashboard() {
                     <td className="px-4 py-3">₹{p.price?.toLocaleString?.() || p.price}</td>
                     <td className="px-4 py-3">{p.category}</td>
                     <td className="px-4 py-3 space-x-2">
-                      <button className="px-2 py-1 rounded border border-gray-200 text-gray-700 hover:bg-gray-50">Edit</button>
+                      <button onClick={() => { setSelectedProduct(p); setShowEdit(true); }} className="px-2 py-1 rounded border border-gray-200 text-gray-700 hover:bg-gray-50">Edit</button>
                       <button onClick={async () => { if (!confirm('Delete product?')) return; try { await deleteProduct(p._id); setProducts((prev) => prev.filter(x => x._id !== p._id)); } catch (e) { alert('Failed'); } }} className="px-2 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50">Delete</button>
                     </td>
                   </tr>
@@ -255,14 +256,122 @@ export default function AdminDashboard() {
 
       {/* Add Product modal */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl w-full max-w-2xl p-6">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Add Product</h3>
             <ProductForm onCancel={() => setShowAdd(false)} onCreated={(p) => { setProducts((prev) => [p, ...prev]); setShowAdd(false); }} />
           </div>
         </div>
       )}
+
+      {/* Edit Product modal */}
+      {showEdit && selectedProduct && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
+            <EditProductForm
+              product={selectedProduct}
+              onCancel={() => { setShowEdit(false); setSelectedProduct(null); }}
+              onSaved={(updated) => {
+                setProducts((prev) => prev.map((x) => (x._id === updated._id ? updated : x)));
+                setShowEdit(false);
+                setSelectedProduct(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function EditProductForm({ product, onCancel, onSaved }) {
+  const [form, setForm] = useState({
+    name: product.name || '',
+    brand: product.brand || '',
+    price: product.price || 0,
+    category: product.category || 'Mens',
+    subCategory: product.subCategory || '',
+    images: Array.isArray(product.images) ? product.images.join(', ') : (product.image ? [product.image].join(', ') : ''),
+    description: product.description || '',
+    stock: product.stock ?? 0
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        name: form.name,
+        brand: form.brand,
+        price: Number(form.price || 0),
+        category: form.category,
+        subCategory: form.subCategory,
+        images: form.images ? form.images.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        description: form.description,
+        stock: Number(form.stock || 0)
+      };
+      const updated = await updateProduct(product._id, payload);
+      onSaved && onSaved(updated);
+    } catch (err) {
+      console.error('Update product failed', err);
+      alert('Failed to update product');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm text-gray-700">Name</label>
+          <input name="name" value={form.name} onChange={handleChange} required className="w-full mt-1 px-3 py-2 border rounded-md" />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700">Brand</label>
+          <input name="brand" value={form.brand} onChange={handleChange} className="w-full mt-1 px-3 py-2 border rounded-md" />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700">Price</label>
+          <input name="price" value={form.price} onChange={handleChange} type="number" step="0.01" className="w-full mt-1 px-3 py-2 border rounded-md" />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700">Category</label>
+          <select name="category" value={form.category} onChange={handleChange} className="w-full mt-1 px-3 py-2 border rounded-md">
+            <option>Mens</option>
+            <option>Womens</option>
+            <option>Kids</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700">Sub Category</label>
+          <input name="subCategory" value={form.subCategory} onChange={handleChange} className="w-full mt-1 px-3 py-2 border rounded-md" />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-700">Stock</label>
+          <input name="stock" value={form.stock} onChange={handleChange} type="number" className="w-full mt-1 px-3 py-2 border rounded-md" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-700">Images (comma separated URLs)</label>
+        <input name="images" value={form.images} onChange={handleChange} className="w-full mt-1 px-3 py-2 border rounded-md" />
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-700">Description</label>
+        <textarea name="description" value={form.description} onChange={handleChange} className="w-full mt-1 px-3 py-2 border rounded-md" rows={4} />
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
+        <button type="button" onClick={onCancel} className="px-4 py-2 rounded-md border">Cancel</button>
+        <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-primary-600 text-white">{saving ? 'Saving...' : 'Save Changes'}</button>
+      </div>
+    </form>
   );
 }
 

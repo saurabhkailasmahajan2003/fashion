@@ -42,16 +42,31 @@ export function UserProvider({ children }) {
     const data = await loginAPI(email, password);
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify({ _id: data._id, name: data.name, email: data.email }));
-    setUser(data);
-    return data;
+    // Immediately fetch profile to hydrate isAdmin and any other fields
+    try {
+      const profile = await getProfileAPI();
+      const merged = { ...data, ...profile };
+      setUser(merged);
+      return merged;
+    } catch {
+      setUser(data);
+      return data;
+    }
   };
 
   const register = async (name, email, password) => {
     const data = await registerAPI(name, email, password);
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify({ _id: data._id, name: data.name, email: data.email }));
-    setUser(data);
-    return data;
+    try {
+      const profile = await getProfileAPI();
+      const merged = { ...data, ...profile };
+      setUser(merged);
+      return merged;
+    } catch {
+      setUser(data);
+      return data;
+    }
   };
 
   const logout = () => {

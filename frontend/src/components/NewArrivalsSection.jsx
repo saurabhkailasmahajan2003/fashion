@@ -85,7 +85,7 @@ export default function NewArrivalsSection() {
                     <img
                       loading="lazy"
                       style={{ willChange: 'transform' }}
-                      src={product.image}
+                      src={product.images?.[0] || product.image}
                       alt={product.name}
                       className="object-cover w-full h-full transition-transform duration-300"
                     />

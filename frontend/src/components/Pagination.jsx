@@ -20,11 +20,11 @@ export default function Pagination({ page, pages, onPageChange }) {
   const pageNumbers = getPageNumbers();
 
   return (
-    <nav className="flex justify-center my-6" aria-label="Pagination">
-      <ul className="inline-flex items-center gap-1">
+    <nav className="flex justify-center my-8" aria-label="Pagination">
+      <ul className="flex flex-wrap items-center gap-2">
         <li>
           <button
-            className="px-2 py-1 text-sm rounded-md border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50"
+            className="px-3 py-2 text-sm rounded-full border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => onPageChange(1)}
             disabled={page === 1}
             aria-label="First page"
@@ -34,7 +34,7 @@ export default function Pagination({ page, pages, onPageChange }) {
         </li>
         <li>
           <button
-            className="px-2 py-1 text-sm rounded-md border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50"
+            className="px-3 py-2 text-sm rounded-full border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => onPageChange(page - 1)}
             disabled={page === 1}
             aria-label="Previous page"
@@ -45,9 +45,9 @@ export default function Pagination({ page, pages, onPageChange }) {
         {pageNumbers.map((p, idx) => (
           <li key={idx}>
             {p === '...'
-              ? <span className="px-2 py-1 text-gray-400">...</span>
+              ? <span className="px-2 py-2 text-gray-400">…</span>
               : <button
-                  className={`px-3 py-1.5 text-sm rounded-md border ${p === page ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                  className={`px-4 py-2 text-sm rounded-full border transition-colors ${p === page ? 'bg-primary-600 border-primary-600 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => onPageChange(p)}
                   aria-current={p === page ? 'page' : undefined}
                 >
@@ -58,7 +58,7 @@ export default function Pagination({ page, pages, onPageChange }) {
         ))}
         <li>
           <button
-            className="px-2 py-1 text-sm rounded-md border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50"
+            className="px-3 py-2 text-sm rounded-full border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => onPageChange(page + 1)}
             disabled={page === pages}
             aria-label="Next page"
@@ -68,7 +68,7 @@ export default function Pagination({ page, pages, onPageChange }) {
         </li>
         <li>
           <button
-            className="px-2 py-1 text-sm rounded-md border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50"
+            className="px-3 py-2 text-sm rounded-full border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => onPageChange(pages)}
             disabled={page === pages}
             aria-label="Last page"

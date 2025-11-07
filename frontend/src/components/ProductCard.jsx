@@ -6,17 +6,38 @@ import { useCart } from '../context/CartContext.jsx';
 export default function ProductCard({ product }) {
   const { toggle, isWished } = useWishlist();
   const { addToCart } = useCart();
+  const primary = product?.images?.[0] || product?.image || 'https://via.placeholder.com/600';
+  const secondary = product?.images?.[1] || null;
+  const totalImages = Array.isArray(product?.images) ? product.images.length : (product?.image ? 1 : 0);
   return (
     <div className="group rounded-xl border border-gray-200 bg-white p-3  h-full flex flex-col">
       <div className="relative">
         <Link to={`/product/${product._id}`} className="block">
-          <div className="aspect-square w-full overflow-hidden rounded-lg bg-gray-50">
+          <div className="aspect-[4/5] w-full overflow-hidden rounded-lg bg-gray-50 relative">
             <img
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              src={product.images?.[0] || 'https://via.placeholder.com/600'}
+              referrerPolicy="no-referrer"
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${secondary ? 'opacity-100 group-hover:opacity-0' : ''}`}
+              src={primary}
               alt={product.name}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://placehold.co/800x1000?text=Product';
+              }}
             />
+            {secondary && (
+              <img
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                src={secondary}
+                alt={`${product.name} - alternate`}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://placehold.co/800x1000?text=Product';
+                }}
+              />
+            )}
           </div>
         </Link>
         <button
@@ -26,10 +47,13 @@ export default function ProductCard({ product }) {
         >
           <Heart size={16} fill={isWished(product._id) ? 'currentColor' : 'none'} />
         </button>
-        {(product.onSale || product.isNewArrival) && (
+        {totalImages > 1 && (
+          <span className="absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded bg-black/60 text-white">{totalImages} images</span>
+        )}
+        {(product.onSale || product.newArrival) && (
           <div className="absolute left-2 top-2 flex gap-1">
             {product.onSale && <span className="rounded-full bg-primary-600/90 text-white text-[10px] px-2 py-0.5">SALE</span>}
-            {product.isNewArrival && <span className="rounded-full bg-emerald-600/90 text-white text-[10px] px-2 py-0.5">NEW</span>}
+            {product.newArrival && <span className="rounded-full bg-emerald-600/90 text-white text-[10px] px-2 py-0.5">NEW</span>}
           </div>
         )}
       </div>
@@ -40,9 +64,9 @@ export default function ProductCard({ product }) {
           <div className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors min-h-[40px] line-clamp-2">{product.name}</div>
         </Link>
         <div className="flex items-center gap-3 mt-1.5">
-          <div className="text-base font-bold text-gray-900">₹{product.price.toLocaleString()}</div>
+          <div className="text-base font-bold text-gray-900">₹{Number(product.price).toLocaleString('en-IN')}</div>
           {product.discount && (
-            <div className="text-xs text-gray-400 line-through">₹{Math.round(product.price / (1 - product.discount / 100)).toLocaleString()}</div>
+            <div className="text-xs text-gray-400 line-through">₹{Number(Math.round(product.price / (1 - product.discount / 100))).toLocaleString('en-IN')}</div>
           )}
         </div>
       </div>

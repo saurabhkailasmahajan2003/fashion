@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { verifyRazorpayPayment } from '../api/paymentAPI.js';
+import { useNavigate } from 'react-router-dom';
+import { checkCgpeyStatus } from '../api/paymentAPI.js';
 import { useCart } from '../context/CartContext.jsx';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 export default function PaymentCallback() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { clearCart } = useCart();
   const [status, setStatus] = useState('verifying'); // verifying, success, failed
@@ -15,64 +14,37 @@ export default function PaymentCallback() {
   useEffect(() => {
     const verifyPayment = async () => {
       try {
-        // Get order ID from sessionStorage
         const pendingOrderId = sessionStorage.getItem('pendingOrderId');
-        
         if (!pendingOrderId) {
           setStatus('failed');
           setError('Order information not found');
           return;
         }
 
-        // Get payment details from URL parameters
-        const paymentId = searchParams.get('razorpay_payment_id');
-        const orderId = searchParams.get('razorpay_order_id');
-        const signature = searchParams.get('razorpay_signature');
-        const paymentIdFromLink = searchParams.get('payment_id');
-
-        // Try to verify payment if we have the details
-        if (paymentId || paymentIdFromLink) {
+        // Poll CGPEY status a few times after redirect
+        let attempts = 0;
+        const maxAttempts = 20; // ~20s
+        const interval = setInterval(async () => {
+          attempts += 1;
           try {
-            await verifyRazorpayPayment({
-              orderId: pendingOrderId,
-              razorpayOrderId: orderId || pendingOrderId,
-              razorpayPaymentId: paymentId || paymentIdFromLink,
-              razorpaySignature: signature || 'verified_via_payment_link'
-            });
-
-            // Clear cart and order data
-            clearCart();
-            sessionStorage.removeItem('pendingOrderId');
-            sessionStorage.removeItem('pendingOrderData');
-
-            setStatus('success');
-            
-            // Redirect to success page after 3 seconds
-            setTimeout(() => {
-              navigate(`/order-success?orderId=${pendingOrderId}`);
-            }, 3000);
-          } catch (verifyErr) {
-            console.error('Verification error:', verifyErr);
-            // Even if verification fails, show success (user paid via link)
-            // The backend webhook will handle the actual verification
-            setStatus('success');
-            clearCart();
-            sessionStorage.removeItem('pendingOrderId');
-            sessionStorage.removeItem('pendingOrderData');
-            
-            setTimeout(() => {
-              navigate(`/order-success?orderId=${pendingOrderId}`);
-            }, 3000);
+            const resp = await checkCgpeyStatus(pendingOrderId);
+            if (String(resp.status).toLowerCase() === 'success') {
+              clearInterval(interval);
+              clearCart();
+              sessionStorage.removeItem('pendingOrderId');
+              sessionStorage.removeItem('pendingOrderData');
+              setStatus('success');
+              setTimeout(() => navigate(`/order-success?orderId=${pendingOrderId}`), 1500);
+            }
+          } catch (_) {
+            // keep polling
           }
-        } else {
-          // If no payment ID, assume payment was cancelled or pending
-          // Show a message and redirect
-          setStatus('verifying');
-          // Give it a moment in case webhook updates the order
-          setTimeout(() => {
-            navigate(`/order-success?orderId=${pendingOrderId}`);
-          }, 2000);
-        }
+          if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setStatus('failed');
+            setError('Payment status could not be verified.');
+          }
+        }, 1000);
       } catch (err) {
         console.error('Payment callback error:', err);
         setStatus('failed');
@@ -81,7 +53,7 @@ export default function PaymentCallback() {
     };
 
     verifyPayment();
-  }, [searchParams, navigate, clearCart]);
+  }, [navigate, clearCart]);
 
   if (status === 'verifying') {
     return (

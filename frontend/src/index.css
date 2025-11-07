@@ -5,11 +5,16 @@
 @tailwind utilities;
 
 @layer base {
+  html { font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, sans-serif; }
   body {
-    @apply bg-neutral-50 text-neutral-900 font-sans;
+    @apply bg-neutral-50 text-neutral-900;
+    font-family: inherit;
   }
-  h1, h2, h3, h4 {
-    @apply font-display;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+  button, input, textarea, select {
+    font-family: inherit;
   }
 }
 
