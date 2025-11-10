@@ -3,5 +3,7 @@
 .env.local
 .env.*.local
 
+.env.*
 node_modules
 .env
+VITE_API_URL=https://fashion-store-3x1m.onrender.com/api

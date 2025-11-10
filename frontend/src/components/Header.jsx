@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { fetchProducts } from '../api/productAPI.js';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, User, ShoppingBag, Menu, X, Heart, LogOut, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext.jsx';
@@ -85,8 +86,7 @@ const Header = () => {
     setSuggestLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/products?keyword=${encodeURIComponent(searchQuery)}&limit=6`);
-        const data = await res.json();
+        const data = await fetchProducts({ keyword: searchQuery, limit: 6 });
         if (mounted) setSuggestions(data.products || []);
       } catch (e) {
         if (mounted) setSuggestions([]);
