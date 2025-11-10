@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_URL || '/api';
 const api = axios.create({
-  // baseURL left empty to use vite proxy for /api
+  baseURL,
   timeout: 10000
 });
 
@@ -18,30 +19,30 @@ const buildQueryString = (params = {}) => {
 
 export const fetchProducts = async (params = {}) => {
   const qs = buildQueryString(params);
-  const { data } = await api.get(`/api/products${qs}`);
+  const { data } = await api.get(`/products${qs}`);
   return data; // {products, page, pages, total}
 };
 
 export const fetchProduct = async (id) => {
-  const { data } = await api.get(`/api/products/${id}`);
+  const { data } = await api.get(`/products/${id}`);
   return data;
 };
 
 export const createProduct = async (product) => {
   const token = localStorage.getItem('token');
-  const { data } = await api.post('/api/products', product, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+  const { data } = await api.post('/products', product, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
   return data;
 };
 
 export const deleteProduct = async (id) => {
   const token = localStorage.getItem('token');
-  const { data } = await api.delete(`/api/products/${id}`, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+  const { data } = await api.delete(`/products/${id}`, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
   return data;
 };
 
 export const updateProduct = async (id, product) => {
   const token = localStorage.getItem('token');
-  const { data } = await api.put(`/api/products/${id}`, product, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+  const { data } = await api.put(`/products/${id}`, product, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
   return data;
 };
 
