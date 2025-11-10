@@ -1,13 +1,13 @@
 
-# Logs
-logs
-*.log
+# # Logs
+# logs
+# *.log
 
-# Node modules
-node_modules/
+# # Node modules
+# node_modules/
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# # Environment files
+# .env
+# .env.local
+# .env.*.local
 

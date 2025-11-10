@@ -2,11 +2,13 @@ import asyncHandler from 'express-async-handler';
 import Wishlist from '../models/Wishlist.js';
 
 export const getMyWishlist = asyncHandler(async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Not authorized' });
   const wl = await Wishlist.findOne({ user: req.user._id }).populate('products');
   return res.json(wl || { user: req.user._id, products: [] });
 });
 
 export const toggleWishlist = asyncHandler(async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Not authorized' });
   const { productId } = req.body;
   let wl = await Wishlist.findOne({ user: req.user._id });
   if (!wl) wl = new Wishlist({ user: req.user._id, products: [] });

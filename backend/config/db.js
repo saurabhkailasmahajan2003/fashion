@@ -1,15 +1,12 @@
 import mongoose from 'mongoose';
 
 export const connectDB = async () => {
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/fashion_store';
+  const URL= process.env.MONGODB_URI;
   try {
-    await mongoose.connect(uri, {
-      dbName: process.env.MONGODB_DB || process.env.MONGO_DB || undefined
-    });
-    // eslint-disable-next-line no-console
+    await mongoose.connect(URL);
     console.log('MongoDB connected');
+    const conn = mongoose.connection;
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('MongoDB connection error:', error.message);
     process.exit(1);
   }

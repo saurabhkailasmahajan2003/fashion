@@ -27,6 +27,7 @@ export const authUser = asyncHandler(async (req, res) => {
 });
 
 export const getProfile = asyncHandler(async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Not authorized' });
   const user = await User.findById(req.user._id).select('-password');
   return res.json(user);
 });
