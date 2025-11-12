@@ -17,6 +17,7 @@ dotenv.config();
 await connectDB();
 
 const app = express();
+// pp.use(cors());
 
 // Middleware
 const allowedFromEnv = (process.env.CORS_ORIGIN || '')
