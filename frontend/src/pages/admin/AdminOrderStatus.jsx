@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { getAllOrders, markOrderDelivered } from '../../api/ordersAPI';
+import api from '../../api.js';
 import { useToast } from '../../components/ui/ToastProvider.jsx';
 
 export default function AdminOrderStatus() {
@@ -13,7 +13,7 @@ export default function AdminOrderStatus() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const res = await getAllOrders();
+      const { data: res } = await api.get('/orders');
       setOrders(Array.isArray(res) ? res : (res?.orders || []));
     } catch (e) {
       setError('Failed to load orders');
@@ -26,7 +26,7 @@ export default function AdminOrderStatus() {
     if (!order?._id || order.isDelivered) return;
     setUpdatingId(order._id);
     try {
-      await markOrderDelivered(order._id);
+      await api.put(`/orders/${order._id}/deliver`);
       // Update local state so admin sees the change immediately
       setOrders(arr => arr.map(o => o._id === order._id ? { ...o, isDelivered: true, deliveredAt: new Date().toISOString() } : o));
       // Also reload to ensure we reflect server truth and populated fields

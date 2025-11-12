@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
 import { useUser } from '../context/UserContext.jsx';
-import { createCgpeyPayment, checkCgpeyStatus } from '../api/paymentAPI.js';
+import api from '../api.js';
 import { motion } from 'framer-motion';
 import { Loader, CreditCard, MapPin } from 'lucide-react';
 
@@ -77,7 +77,7 @@ export default function Checkout() {
       };
 
       console.log('Sending CGPEY payload:', payload);
-      const resp = await createCgpeyPayment(payload);
+      const { data: resp } = await api.post('/orders/cgpey/make-payment', payload);
       console.log('CGPEY response:', resp);
 
       if (!resp || !resp.orderId) {
@@ -100,7 +100,7 @@ export default function Checkout() {
       const interval = setInterval(async () => {
         attempts += 1;
         try {
-          const status = await checkCgpeyStatus(orderId);
+          const { data: status } = await api.post('/orders/cgpey/check-status', { transaction_id: orderId });
           if (String(status.status).toLowerCase() === 'success') {
             clearInterval(interval);
             clearCart();

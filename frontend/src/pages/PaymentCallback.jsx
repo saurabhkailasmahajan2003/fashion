@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { checkCgpeyStatus } from '../api/paymentAPI.js';
+import api from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
@@ -27,7 +27,7 @@ export default function PaymentCallback() {
         const interval = setInterval(async () => {
           attempts += 1;
           try {
-            const resp = await checkCgpeyStatus(pendingOrderId);
+            const { data: resp } = await api.post('/orders/cgpey/check-status', { transaction_id: pendingOrderId });
             if (String(resp.status).toLowerCase() === 'success') {
               clearInterval(interval);
               clearCart();

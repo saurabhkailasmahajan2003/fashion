@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchProduct } from '../api/productAPI.js';
+import api from '../api.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import Loader from '../components/Loader.jsx';
@@ -16,9 +16,12 @@ export default function ProductDetail() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const res = await fetchProduct(id);
-      setProduct(res);
-      setLoading(false);
+      try {
+        const { data } = await api.get(`/products/${id}`);
+        setProduct(data);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [id]);
 

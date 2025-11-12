@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { createProduct } from '../../api/productAPI';
+import api from '../../api.js';
 import { useToast } from '../../components/ui/ToastProvider.jsx';
 
 const brands = ['Nike','Adidas','Puma','Zara','H&M','Uniqlo'];
@@ -84,7 +84,7 @@ export default function AdminProductAdd() {
         sizes,
         discount: Number(form.discount) || 0
       };
-      await createProduct(payload);
+      await api.post('/products', payload);
       setMsg('Product created');
       push({ variant: 'success', title: 'Product added', description: `${form.name || 'Product'} has been created.` });
       setForm({ name: '', brand: '', category: '', subCategory: '', price: '', countInStock: '', description: '', newArrival: true, discount: '' });

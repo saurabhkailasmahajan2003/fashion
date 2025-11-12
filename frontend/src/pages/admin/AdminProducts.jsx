@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchProducts, deleteProduct, updateProduct } from '../../api/productAPI';
+import api from '../../api.js';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import ProductForm from '../../components/admin/ProductForm';
 
@@ -16,7 +16,7 @@ export default function AdminProducts() {
 
   const loadProducts = async () => {
     try {
-      const data = await fetchProducts();
+      const { data } = await api.get('/products');
       setProducts(data?.products || []);
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -28,7 +28,7 @@ export default function AdminProducts() {
   const handleDelete = async (productId) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await deleteProduct(productId);
+        await api.delete(`/products/${productId}`);
         await loadProducts();
       } catch (error) {
         console.error('Failed to delete product:', error);

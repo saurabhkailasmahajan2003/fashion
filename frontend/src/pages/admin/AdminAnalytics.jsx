@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { getAllOrders } from '../../api/ordersAPI';
-import { fetchProducts } from '../../api/productAPI';
-import { getUsers } from '../../api/userAPI';
+import api from '../../api.js';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 function StatCard({ title, value, delta = '+0', color = 'from-emerald-600 to-emerald-400', spark = [] }) {
@@ -45,13 +43,13 @@ export default function AdminAnalytics() {
       setLoading(true);
       try {
         const [o, p, u] = await Promise.all([
-          getAllOrders(),
-          fetchProducts({ limit: 100 }),
-          getUsers()
+          api.get('/orders'),
+          api.get('/products', { params: { limit: 100 } }),
+          api.get('/users')
         ]);
-        setOrders(Array.isArray(o) ? o : o?.orders || []);
-        setProducts(Array.isArray(p?.products) ? p.products : []);
-        setUsers(Array.isArray(u) ? u : []);
+        setOrders(Array.isArray(o.data) ? o.data : (o.data?.orders || []));
+        setProducts(Array.isArray(p.data?.products) ? p.data.products : []);
+        setUsers(Array.isArray(u.data) ? u.data : (u.data?.users || []));
       } finally {
         setLoading(false);
       }

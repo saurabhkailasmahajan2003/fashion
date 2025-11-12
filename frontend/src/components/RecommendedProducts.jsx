@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Loader from './Loader.jsx';
 import ProductCard from './ProductCard.jsx';
-import { fetchProducts } from '../api/productAPI.js';
+import api from '../api.js';
 
 const RecommendedProducts = () => {
   const [data, setData] = useState({ products: [] });
@@ -11,10 +11,12 @@ const RecommendedProducts = () => {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      // Use onSale or isNewArrival as a heuristic for recommending
-      const res = await fetchProducts({ limit: 8, onSale: true });
-      setData(res);
-      setLoading(false);
+      try {
+        const { data: res } = await api.get('/products', { params: { limit: 8, onSale: true } });
+        setData(res);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 

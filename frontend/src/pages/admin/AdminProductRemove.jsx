@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { fetchProducts, deleteProduct } from '../../api/productAPI';
+import api from '../../api.js';
 import { useToast } from '../../components/ui/ToastProvider.jsx';
 
 export default function AdminProductRemove() {
@@ -13,7 +13,7 @@ export default function AdminProductRemove() {
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const res = await fetchProducts({ limit: 100 });
+      const { data: res } = await api.get('/products', { params: { limit: 100 } });
       setProducts(res?.products || []);
     } catch (e) {
       setError('Failed to load products');
@@ -28,7 +28,7 @@ export default function AdminProductRemove() {
     if (!yes) return;
     setDeletingId(id);
     try {
-      await deleteProduct(id);
+      await api.delete(`/api/products/${id}`);
       setProducts((arr)=>arr.filter(p=>p._id !== id));
       push({ variant: 'success', title: 'Product deleted', description: 'The product has been removed.' });
     } catch (e) {

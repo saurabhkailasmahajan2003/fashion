@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { fetchProducts } from '../../api/productAPI';
-import { getAllOrders } from '../../api/ordersAPI';
+import api from '../../api.js';
 
 function ProductForm({ onCancel, onCreated }) {
   const [form, setForm] = useState({ name: '', brand: '', price: '', category: 'Mens', subCategory: '', images: '', description: '', stock: 0 });
@@ -21,7 +20,7 @@ function ProductForm({ onCancel, onCreated }) {
         description: form.description,
         stock: Number(form.stock || 0)
       };
-      const created = await createProduct(payload);
+      const { data: created } = await api.post('/products', payload);
       onCreated && onCreated(created);
     } catch (err) {
       console.error('Create product failed', err);
@@ -125,8 +124,8 @@ export default function AdminDashboard() {
     (async () => {
       setLoadingProducts(true);
       try {
-        const res = await fetchProducts({ limit: 20 });
-        setProducts(res.products || []);
+        const { data } = await api.get('/products', { params: { limit: 20 } });
+        setProducts(data.products || []);
       } catch (_) {
         setProducts([]);
       } finally {
@@ -138,8 +137,8 @@ export default function AdminDashboard() {
     (async () => {
       setLoadingOrders(true);
       try {
-        const res = await getAllOrders();
-        setOrders(res || []);
+        const { data } = await api.get('/orders');
+        setOrders(Array.isArray(data) ? data : (data?.orders || []));
       } catch (err) {
         setOrders([]);
       } finally {

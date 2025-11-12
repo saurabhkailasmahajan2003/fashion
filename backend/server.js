@@ -24,7 +24,14 @@ const allowedFromEnv = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
-const defaultOrigins = ['http://localhost:5174', 'http://127.0.0.1:5174'];
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5176',
+  'http://127.0.0.1:5176',
+];
 const whitelist = new Set([...defaultOrigins, ...allowedFromEnv]);
 
 app.use(
@@ -32,6 +39,10 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (whitelist.has(origin)) return callback(null, true);
+      try {
+        const u = new URL(origin);
+        if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return callback(null, true);
+      } catch {}
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { fetchProducts } from '../api/productAPI.js';
+import api from '../api.js';
 import ProductCard from '../components/ProductCard.jsx';
 import Pagination from '../components/Pagination.jsx';
 import Loader from '../components/Loader.jsx';
@@ -23,9 +23,14 @@ export default function CategoryPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const res = await fetchProducts({ page, category, subCategory: sub, minPrice, maxPrice, colors, sizes, brands });
-      setData(res);
-      setLoading(false);
+      try {
+        const { data: res } = await api.get('/products', {
+          params: { page, category, subCategory: sub, minPrice, maxPrice, colors, sizes, brands }
+        });
+        setData(res);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [category, page, sub, minPrice, maxPrice, colors, sizes, brands]);
 

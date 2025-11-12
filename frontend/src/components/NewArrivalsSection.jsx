@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchProducts } from '../api/productAPI.js';
+import api from '../api.js';
 import Loader from './Loader.jsx';
 
 export default function NewArrivalsSection() {
@@ -15,9 +15,12 @@ export default function NewArrivalsSection() {
 
   const loadProducts = async () => {
     setLoading(true);
-    const res = await fetchProducts({ limit: 8, isNewArrival: true });
-    setData(res);
-    setLoading(false);
+    try {
+      const { data: res } = await api.get('/products', { params: { limit: 8, isNewArrival: true } });
+      setData(res);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const categories = ['All', 'Mens', 'Womens', 'Kids'];

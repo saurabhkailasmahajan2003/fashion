@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useUser } from './UserContext.jsx';
 import { useModal } from './ModalContext.jsx';
-import { getMyWishlist, toggleWishlist as toggleWishlistAPI } from '../api/wishlistAPI.js';
+import api from '../api.js';
 
 const WishlistContext = createContext(undefined);
 
@@ -16,8 +16,8 @@ export function WishlistProvider({ children }) {
   useEffect(() => {
     if (user) {
       setLoading(true);
-      getMyWishlist()
-        .then((wishlist) => {
+      api.get('/wishlist/mine')
+        .then(({ data: wishlist }) => {
           if (wishlist && wishlist.products) {
             // Extract product IDs from populated products or direct IDs
             const ids = wishlist.products.map(p => p._id || p.toString());
@@ -52,7 +52,7 @@ export function WishlistProvider({ children }) {
     
     // Sync with backend
     try {
-      const updatedWishlist = await toggleWishlistAPI(id);
+      const { data: updatedWishlist } = await api.post('/wishlist/toggle', { productId: id });
       // Update with fresh data from backend
       if (updatedWishlist && updatedWishlist.products) {
         const ids = updatedWishlist.products.map(p => p._id || p.toString());

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { getUsers } from '../../api/userAPI';
+import api from '../../api.js';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -12,8 +12,8 @@ export default function AdminUsers() {
     (async () => {
       setLoading(true);
       try {
-        const res = await getUsers();
-        setUsers(Array.isArray(res) ? res : []);
+        const { data } = await api.get('/users');
+        setUsers(Array.isArray(data) ? data : (data?.users || []));
       } catch (e) {
         setError('Failed to load users');
       } finally {

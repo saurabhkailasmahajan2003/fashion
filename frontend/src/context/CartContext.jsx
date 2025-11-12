@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { useUser } from './UserContext.jsx';
 import { useModal } from './ModalContext.jsx';
-import { getMyCart, updateCart } from '../api/cartAPI.js';
+import api from '../api.js';
 
 const CartContext = createContext(undefined);
 
@@ -17,8 +17,8 @@ export function CartProvider({ children }) {
     if (user) {
       setLoading(true);
       setIsInitialLoad(true);
-      getMyCart()
-        .then((cart) => {
+      api.get('/cart/mine')
+        .then(({ data: cart }) => {
           if (cart && cart.items) {
             // Transform backend format to frontend format
             const transformedItems = cart.items.map(item => ({
@@ -50,11 +50,8 @@ export function CartProvider({ children }) {
     if (!user || loading || isInitialLoad) return;
     
     const timeoutId = setTimeout(() => {
-      const cartItems = items.map(item => ({
-        product: item.product,
-        qty: item.qty
-      }));
-      updateCart(cartItems).catch((err) => {
+      const cartItems = items.map(item => ({ product: item.product, qty: item.qty }));
+      api.put('/cart/mine', { items: cartItems }).catch((err) => {
         console.error('Error syncing cart:', err);
       });
     }, 500);

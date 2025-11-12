@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext.jsx';
 import { motion } from 'framer-motion';
 import { LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getMyOrders } from '../api/ordersAPI.js';
+import api from '../api.js';
 
 export default function Profile() {
   const { user, logout } = useUser();
@@ -25,7 +25,7 @@ export default function Profile() {
       setLoadingOrders(true);
       setOrdersError(null);
       try {
-        const data = await getMyOrders();
+        const { data } = await api.get('/orders/mine');
         if (mounted) setOrders(data || []);
       } catch (err) {
         console.error('Failed to load orders', err);

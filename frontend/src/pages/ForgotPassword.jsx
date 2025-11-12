@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { requestPasswordReset } from '../api/userAPI';
+import api from '../api.js';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ export default function ForgotPassword() {
     setError('');
     setLoading(true);
     try {
-      const res = await requestPasswordReset(email);
+      const { data: res } = await api.post('/users/forgot-password', { email });
       setMessage(res?.message || 'If that email exists, a reset link has been sent');
     } catch (err) {
       setMessage('If that email exists, a reset link has been sent');

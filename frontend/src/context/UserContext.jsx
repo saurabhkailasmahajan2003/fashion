@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { login as loginAPI, register as registerAPI, getProfile as getProfileAPI } from '../api/userAPI.js';
+import api from '../api.js';
 
 const UserContext = createContext(undefined);
 
@@ -16,7 +16,7 @@ export function UserProvider({ children }) {
         const parsedUser = JSON.parse(userData);
         setUser({ ...parsedUser, token });
         // Verify token by fetching profile
-        getProfileAPI()
+        api.get('/users/profile')
           .then((profile) => {
             setUser({ ...parsedUser, ...profile });
           })
@@ -39,12 +39,13 @@ export function UserProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const data = await loginAPI(email, password);
+    const { data } = await api.post('/users/login', { email, password });
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify({ _id: data._id, name: data.name, email: data.email }));
     // Immediately fetch profile to hydrate isAdmin and any other fields
     try {
-      const profile = await getProfileAPI();
+      const profileResp = await api.get('/users/profile');
+      const profile = profileResp.data;
       const merged = { ...data, ...profile };
       setUser(merged);
       return merged;
@@ -55,11 +56,12 @@ export function UserProvider({ children }) {
   };
 
   const register = async (name, email, password) => {
-    const data = await registerAPI(name, email, password);
+    const { data } = await api.post('/users/register', { name, email, password });
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify({ _id: data._id, name: data.name, email: data.email }));
     try {
-      const profile = await getProfileAPI();
+      const profileResp = await api.get('/users/profile');
+      const profile = profileResp.data;
       const merged = { ...data, ...profile };
       setUser(merged);
       return merged;

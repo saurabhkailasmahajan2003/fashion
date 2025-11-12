@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { createProduct } from '../../api/productAPI';
+import api from '../../api.js';
 
 export default function ProductForm({ onCancel, onCreated }) {
   const [form, setForm] = useState({
@@ -66,7 +66,7 @@ export default function ProductForm({ onCancel, onCreated }) {
         newArrival: !!form.newArrival,
         onSale: !!form.onSale
       };
-      const created = await createProduct(payload);
+      const { data: created } = await api.post('/products', payload);
       onCreated && onCreated(created);
     } catch (err) {
       console.error('Create product failed:', err?.response?.data || err);

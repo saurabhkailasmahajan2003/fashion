@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { fetchProducts } from '../api/productAPI.js';
+import api from '../api.js';
 import ProductCard from '../components/ProductCard.jsx';
 import Loader from '../components/Loader.jsx';
 import ElegantFashionHero from '../components/Hero/ElegantFashionHero.jsx';
@@ -17,9 +17,14 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const res = await fetchProducts({ limit: 8, isNewArrival: true });
-      setData(res);
-      setLoading(false);
+      try {
+        const { data: res } = await api.get('/products', { params: { limit: 8, isNewArrival: true } });
+        setData(res);
+      } catch (e) {
+        setData({ products: [] });
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { resetPassword as resetPasswordAPI } from '../api/userAPI';
+import api from '../api.js';
 
 export default function ResetPassword() {
   const location = useLocation();
@@ -26,21 +26,15 @@ export default function ResetPassword() {
     e.preventDefault();
     setMessage('');
     setError('');
-    if (!password || password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-    if (password !== confirm) {
-      setError('Passwords do not match');
-      return;
-    }
     setLoading(true);
     try {
-      const res = await resetPasswordAPI({ email, token, password });
-      setMessage(res?.message || 'Password updated');
+      const token = new URLSearchParams(location.search).get('token');
+      const emailParam = new URLSearchParams(location.search).get('email');
+      const { data: res } = await api.post('/users/reset-password', { email: emailParam, token, password });
+      setMessage(res?.message || 'Password reset successful. You can now login.');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Reset failed');
+      setError(err?.response?.data?.message || err.message || 'Failed to reset password');
     } finally {
       setLoading(false);
     }

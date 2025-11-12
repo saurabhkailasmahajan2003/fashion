@@ -1,6 +1,6 @@
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useEffect, useState } from 'react';
-import { fetchProduct } from '../api/productAPI.js';
+import api from '../api.js';
 import ProductCard from '../components/ProductCard.jsx';
 
 export default function Wishlist() {
@@ -13,7 +13,8 @@ export default function Wishlist() {
       const results = await Promise.all(
         uniqueIds.map(async (id) => {
           try {
-            return await fetchProduct(id);
+            const { data } = await api.get(`/api/products/${id}`);
+            return data;
           } catch (_) {
             return null;
           }

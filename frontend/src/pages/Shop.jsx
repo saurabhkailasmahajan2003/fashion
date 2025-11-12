@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { fetchProducts } from '../api/productAPI.js';
+import api from '../api.js';
 import ProductCard from '../components/ProductCard.jsx';
 import Pagination from '../components/Pagination.jsx';
 import Loader from '../components/Loader.jsx';
@@ -25,9 +25,16 @@ export default function Shop() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const res = await fetchProducts({ page, keyword, onSale, isNewArrival, minPrice, maxPrice, colors, sizes, brands });
-      setData(res);
-      setLoading(false);
+      try {
+        const { data: res } = await api.get('/products', {
+          params: { page, keyword, onSale, isNewArrival, minPrice, maxPrice, colors, sizes, brands }
+        });
+        setData(res);
+      } catch (e) {
+        setData({ products: [], page: 1, pages: 1, total: 0 });
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [page, keyword, onSale, isNewArrival, minPrice, maxPrice, colors, sizes, brands]);
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { fetchProducts, updateProduct } from '../../api/productAPI';
+import api from '../../api.js';
 import { useToast } from '../../components/ui/ToastProvider.jsx';
 const CATEGORIES = ['Mens','Womens','Kids'];
 
@@ -16,7 +16,7 @@ export default function AdminProductEdit() {
     (async () => {
       setLoading(true); setError('');
       try {
-        const res = await fetchProducts({ limit: 100 });
+        const { data: res } = await api.get('/products', { params: { limit: 100 } });
         setProducts(res?.products || []);
       } catch (e) {
         setError('Failed to load products');
@@ -41,7 +41,7 @@ export default function AdminProductEdit() {
         description: editing.description,
         images: editing.image ? [editing.image] : (editing.images || [])
       };
-      const updated = await updateProduct(editing._id, payload);
+      const { data: updated } = await api.put(`/products/${editing._id}`, payload);
       setProducts((arr) => arr.map((p) => (p._id === editing._id ? { ...p, ...updated } : p)));
       setEditing(null);
       push({ variant: 'success', title: 'Product updated', description: `${updated?.name || 'Product'} saved.` });

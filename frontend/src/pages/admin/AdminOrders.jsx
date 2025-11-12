@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
-import { getAllOrders, markOrderDelivered } from '../../api/ordersAPI';
+import api from '../../api.js';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -12,8 +12,8 @@ export default function AdminOrders() {
 
   const loadOrders = async () => {
     try {
-      const data = await getAllOrders();
-      setOrders(data);
+      const { data } = await api.get('/orders');
+      setOrders(Array.isArray(data) ? data : (data?.orders || []));
     } catch (error) {
       console.error('Failed to load orders:', error);
     } finally {
@@ -23,7 +23,7 @@ export default function AdminOrders() {
 
   const handleMarkDelivered = async (orderId) => {
     try {
-      await markOrderDelivered(orderId);
+      await api.put(`/orders/${orderId}/deliver`);
       await loadOrders();
     } catch (error) {
       console.error('Failed to mark order as delivered:', error);
