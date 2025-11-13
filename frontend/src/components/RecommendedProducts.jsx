@@ -21,24 +21,20 @@ const RecommendedProducts = () => {
   }, []);
 
   return (
-    <section className="py-8 md:py-12 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <div className="flex justify-between items-center mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight">Recommended for you</h2>
-          <Link to="/shop?sale=true" className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors duration-200">See All</Link>
-        </div>
-
-        {loading ? (
-          <Loader />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {data.products.map((p) => (
-              <ProductCard key={p._id} product={p} />
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
+    <CardGrid 
+      title="Recommended For You"
+      subtitle="Discover products we think you'll love based on your browsing history"
+      showViewAll
+      viewAllLink="/shop"
+    >
+      {loading ? (
+        <Loader />
+      ) : (
+        data.products.map((p) => (
+          <ProductCard key={p._id} product={p} />
+        ))
+      )}
+    </CardGrid>
   );
 };
 

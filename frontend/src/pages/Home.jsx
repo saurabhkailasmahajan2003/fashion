@@ -9,6 +9,7 @@ import CategoryShowcase from '../components/CategoryShowcase.jsx';
 import FeaturedCollection from '../components/FeaturedCollection.jsx';
 import Stats from '../components/Stats.jsx';
 import FashionBlog from '../components/FashionBlog.jsx';
+import CardGrid from '../components/CardGrid.jsx';
 
 export default function Home() {
   const [data, setData] = useState({ products: [] });
@@ -71,48 +72,31 @@ export default function Home() {
   {/* Category Showcase */}
   <CategoryShowcase />
 
-  {/* New Arrivals */}
-  <section className="bg-primary-50 py-10 sm:py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-3xl sm:text-4xl font-bold mb-4"
-            >
-              New Arrivals
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-gray-600 max-w-2xl mx-auto"
-            >
-              Be the first to shop our latest collections
-            </motion.p>
-          </div>
-
-          {loading ? (
-            <Loader />
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-              {data.products.map((product, index) => (
-                <motion.div
-                  key={product._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+  {/* New Arrivals Section */}
+  <CardGrid 
+    title="New Arrivals"
+    subtitle="Discover our latest collection of fashion-forward pieces"
+    containerClass="bg-primary-50"
+    showViewAll
+    viewAllLink="/shop?new=true"
+  >
+    {loading ? (
+      <Loader />
+    ) : (
+      data.products.map((product) => (
+        <motion.div
+          key={product._id}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="h-full"
+        >
+          <ProductCard product={product} />
+        </motion.div>
+      ))
+    )}
+  </CardGrid>
 
       {/* Fashion Blog Section */}
       <FashionBlog />
