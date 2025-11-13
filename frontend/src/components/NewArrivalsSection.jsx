@@ -30,7 +30,7 @@ export default function NewArrivalsSection() {
   );
 
   return (
-  <section className="relative bg-gradient-to-b from-primary-50 to-white py-20">
+  <section className="relative bg-gradient-to-b from-primary-50 to-white pt-12 md:pt-16 pb-20">
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
   <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary-100 rounded-full opacity-20" />
