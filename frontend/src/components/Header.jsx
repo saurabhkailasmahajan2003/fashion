@@ -60,7 +60,7 @@ const Header = () => {
 
   const navLinks = [
     { name: 'Shop', href: '/shop' },
-    { name: 'New Arrivals', href: '/shop?new=true', isNew: true },
+    { name: 'Latest', href: '/shop?new=true', isNew: true },
     { name: 'Mens', href: '/category/Mens', hasSub: true },
     { name: 'Womens', href: '/category/Womens', hasSub: true },
     { name: 'Kids', href: '/category/Kids', hasSub: true },
@@ -129,15 +129,17 @@ const Header = () => {
         className={`sticky top-0 z-50 bg-white border-b border-gray-100 transition-all duration-500 ease-in-out ${isScrolled ? 'shadow-md' : 'shadow-sm'}`}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center md:hidden"></div>
-            <div className="flex-grow md:flex-grow-0 flex justify-center md:justify-start">
-                  <Link to="/" className="text-3xl font-black tracking-tight text-gray-900 hover:text-primary-600 transition-colors duration-300 transform hover:scale-105 uppercase whitespace-nowrap">
+          <div className="flex items-center justify-between h-20">
+            {/* Logo - Aligned to the far left */}
+            <div>
+              <Link to="/" className="text-3xl font-black tracking-tight text-gray-900 hover:text-primary-600 transition-colors duration-300 transform hover:scale-105 uppercase whitespace-nowrap">
                 ETRO
-                <span className="block w-4 h-0.5  mx-auto mt-1"></span>
+                <span className="block w-4 h-0.5 bg-gray-900 mt-1"></span>
               </Link>
             </div>
-            <nav className="hidden md:flex items-center gap-2 mx-4 flex-grow justify-center">
+            
+            {/* Navigation - Center aligned */}
+            <nav className="hidden md:flex items-center gap-4 mx-8">
               {navLinks.map((link) => (
                 link.hasSub ? (
                   <div
@@ -254,7 +256,7 @@ const Header = () => {
               ) : (
                 <Link 
                   to="/login" 
-                  className="hidden md:inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none"
+                  className="hidden md:inline-flex items-center px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none whitespace-nowrap"
                 >
                   Sign In
                 </Link>
@@ -304,8 +306,8 @@ const Header = () => {
                       </>
                     ) : (
                       <>
-                        <Link to="/login" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Sign In</Link>
-                        <Link to="/register" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Sign Up</Link>
+                        <Link to="/login" onClick={() => setIsUserMenuOpen(false)} className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 rounded">Sign In</Link>
+                        <Link to="/register" onClick={() => setIsUserMenuOpen(false)} className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 rounded">Sign Up</Link>
                       </>
                     )}
                   </div>
@@ -438,7 +440,7 @@ const Header = () => {
               <div className="flex space-x-2">
                 <Link 
                   to="/login" 
-                  className="flex-1 text-center py-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+                  className="flex-1 text-center py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign In
@@ -510,7 +512,7 @@ const Header = () => {
                 <div className="px-1 space-y-1">
                   <Link 
                     to="/login"
-                    className="block py-3 px-4 text-center text-sm font-medium text-primary-600 hover:bg-gray-50 rounded-lg"
+                    className="block py-2 px-3 text-center text-sm font-medium text-primary-600 hover:bg-gray-50 rounded-md"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Sign In / Register
@@ -519,18 +521,40 @@ const Header = () => {
               )}
             </div>
 
-            {/* Search */}
-            <div className="px-1 pt-2 border-t border-gray-100">
+            {/* Icons - Far right */}
+            <div className="flex items-center space-x-4">
               <button 
                 onClick={() => { setIsMenuOpen(false); setIsSearchOpen(true); }} 
-                className="w-full flex items-center justify-between py-3 px-4 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
+                className="p-2 text-gray-700 hover:text-primary-600 focus:outline-none"
+                aria-label="Search products"
               >
-                <span>Search Products</span>
-                <Search size={18} className="text-gray-400" />
+                <Search size={20} className="text-gray-600" />
+              </button>
+              
+              <Link 
+                to="/cart" 
+                className="relative p-2 text-gray-700 hover:text-primary-600 focus:outline-none"
+                aria-label="Shopping Cart"
+              >
+                <ShoppingBag size={20} className="text-gray-600" />
+                {cartItemsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </Link>
+              
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-gray-700 hover:text-primary-600 focus:outline-none md:hidden"
+                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              >
+                {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
           </nav>
-        </div>
+            </div>
+          
       </header>
       {/* This is the page scroll progress bar */}
       <div
